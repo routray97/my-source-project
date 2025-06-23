@@ -9,11 +9,11 @@ pipeline {
   }
 
   stages {
-    stage('Code-Analysis') {
+    stage('Code Analysis with SonarCloud') {
       steps {
         withSonarQubeEnv('SonarCloud') {
           sh """
-            $SCANNER_HOME/bin/sonar-scanner \
+            ${SCANNER_HOME}/bin/sonar-scanner \
               -Dsonar.organization=${SONAR_ORGANIZATION} \
               -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
               -Dsonar.sources=. \
@@ -24,7 +24,7 @@ pipeline {
       }
     }
 
-    stage('Docker Build And Push') {
+    stage('Docker Build & Push') {
       steps {
         script {
           docker.withRegistry('', 'docker-cred') {
@@ -36,11 +36,13 @@ pipeline {
       }
     }
 
-    stage('Deploy To EC2') {
+    stage('Deploy to EC2') {
       steps {
         script {
-          sh 'docker rm -f $(docker ps -q) || true'
-          sh 'docker run -d -p 3000:3000 routrayashish76/crud-123:latest'
+          sh '''
+            docker rm -f $(docker ps -q --filter ancestor=routrayashish76/crud-123:latest) || true
+            docker run -d -p 3000:3000 routrayashish76/crud-123:latest
+          '''
         }
       }
     }
@@ -52,3 +54,4 @@ pipeline {
     success { echo "✅ Build succeeded" }
   }
 }
+
