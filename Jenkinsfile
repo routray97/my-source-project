@@ -1,13 +1,11 @@
 pipeline {
   agent any
-
   environment {
-    SCANNER_HOME       = tool 'sonar-scanner'            // ensure this tool is defined
-    SONAR_TOKEN        = credentials('sonar-token')      // secret text credential
+    SCANNER_HOME       = tool 'sonar-scanner'
+    SONAR_TOKEN        = credentials('sonar-token')
     SONAR_ORGANIZATION = 'jenkins-project-123'
     SONAR_PROJECT_KEY  = 'jenkins-project-123_ci-jenkins'
   }
-
   stages {
     stage('Code-Analysis') {
       steps {
@@ -23,18 +21,17 @@ pipeline {
         }
       }
     }
-
     stage('Docker Build And Push') {
       steps {
         script {
           docker.withRegistry('', 'docker-cred') {
-            def image = docker.build("pekker123/crud-123:latest")
-            image.push()
+            def img = docker.build("pekker123/crud-123:${BUILD_NUMBER}")
+            img.push()
+            img.push('latest')
           }
         }
       }
     }
-
     stage('Deploy To EC2') {
       steps {
         script {
@@ -44,16 +41,9 @@ pipeline {
       }
     }
   }
-
   post {
-    always {
-      echo "🎯 Build finished with status: ${currentBuild.currentResult}"
-    }
-    failure {
-      echo "🚨 Build failed – check logs"
-    }
-    success {
-      echo "✅ Build succeeded"
-    }
+    always { echo "🎯 Build finished: ${currentBuild.currentResult}" }
+    failure { echo "🚨 Build failed — please review logs!" }
+    success { echo "✅ Build succeeded" }
   }
 }
